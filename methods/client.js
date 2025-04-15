@@ -1,7 +1,7 @@
 const io = require("socket.io-client");
 const { spawn } = require("child_process");
 
-const socket = io("http://127.0.0.1:5000");
+const socket = io("https://4631-176-240-66-156.ngrok-free.app");
 
 socket.on("connect", () => {
     console.log("Connected to WebSocket server");
