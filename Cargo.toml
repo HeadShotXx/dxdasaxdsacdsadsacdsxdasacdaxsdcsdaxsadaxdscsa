@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "anti_dump",
+    "test_app",
+]
+resolver = "2"
